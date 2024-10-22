@@ -25,6 +25,7 @@
     "multer": "^1.4.5-lts.1",
     "openai": "^4.67.3",
     "pino": "^9.5.0",
-    "pino-pretty": "^11.3.0"
+    "pino-pretty": "^11.3.0",
+    "readability": "^0.1.0"
   }
 }
