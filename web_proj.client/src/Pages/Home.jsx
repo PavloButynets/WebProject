@@ -1,35 +1,74 @@
+import { useState, useEffect } from "react";
+import styles from "./Home.module.css"
 import LoginRegisterButton from "../Pages/LoginORRegisterButtons/LoginRegisterButton"
+import PrimaryButton from "../components/Buttons/PrimaryButton/PrimaryButton"
+import { useNavigate } from 'react-router-dom';
+import ProcessingEffect from "../components/ProcessingEffect/ProcessingEffect"
+import { Card, Pagination } from 'antd';
 import { useAuth } from "../context/Auth.Context";
-import { test } from "../api/test";
+import { getAssets } from "../api/getAssets";
+
+const { Meta } = Card;
 
 const Home = () => {
     const { isLoggedIn, logout } = useAuth();
+    const [assets, setAssets] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [currentPage, setCurrentPage] = useState(1)
 
-    const handleSubmit = async () => {
+    const navigate = useNavigate();
 
+    const fetchAssets = async (page) => {
         try {
-            const response = await test()
-            if (response.data.success) {
-                const accessToken = response?.data?.token;
-            }
-            
+            const response = await getAssets({page});
+            setAssets(response.data)
+            console.log(assets.totalPages)
         } catch (err) {
-            if (!err.response) {
-                console.log("Error occurred:", err); 
-            } else {
-                console.log("Error occurred:", err.response);
-                const status = err.response.status;
-                const errorMessage = err.response.data.message || "An error occurred";
-            }
+            console.error(err)
+        } finally {
+            setLoading(false)
         }
-    };
+    }
+
+    useEffect(() => {
+
+        fetchAssets(currentPage)
+
+    }, [currentPage])
+
 
     return (
-        <>
-            <h1>Home</h1>
-            {isLoggedIn ?  <button onClick={logout}>Вийти</button> :<LoginRegisterButton /> }
-            <button onClick={handleSubmit}>Вийти</button>
-        </>
+        <div>
+            <h1>Analyze Assets</h1>
+            {isLoggedIn ? <PrimaryButton className={styles.LogoutButton} onClick={logout}>Вийти</PrimaryButton> : <LoginRegisterButton />}
+            {loading ?
+                <ProcessingEffect /> :
+                (<div className={styles.container}>
+                    {assets.data.map(asset => (
+                        <Card
+                            key={asset._id}
+                            hoverable
+                            className={styles.card}
+                            cover={<img alt={asset.name} src={asset.image} />}
+                            onClick={() => navigate(`/assets/${asset._id}`)
+                        }
+                        >
+                            <Meta title={asset.symbol} description={asset.name} />
+                        </Card>
+                        
+                    ))}
+                    
+
+                </div >)
+            }
+            <Pagination
+                align="center"
+                defaultCurrent={currentPage}
+                pageSize={5}
+                total={assets.total}
+                onChange={ (page) => setCurrentPage(page)} />
+            <br />
+        </div>
     )
 }
 
