@@ -1,5 +1,4 @@
 import axios from "axios";
-
 const baseURL = "http://localhost:3001/api"
 
 const API = axios.create({
@@ -10,7 +9,7 @@ const API = axios.create({
   API.interceptors.request.use(
     function (req) {
         const token = localStorage.getItem("token");
-      if (token) req.headers["auth-token"] = token;
+      if (token) req.headers["Authorization"] = `Bearer ${token}`;
       return req;
     },
     function (error) {
@@ -29,8 +28,8 @@ const API = axios.create({
                     const newToken = response.data.token;
                     localStorage.setItem('token', newToken);
 
-                    API.defaults.headers['auth-token'] = newToken;
-                    originalRequest.headers['auth-token'] = newToken;
+                    API.defaults.headers['Authorization'] = newToken;
+                    originalRequest.headers['Authorization'] = newToken;
 
                     return API(originalRequest);
                 }

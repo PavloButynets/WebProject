@@ -1,11 +1,14 @@
 const axios = require('axios');
 const { NEWS_API_KEY } = process.env;
-const { fetchArticleText, saveArticle } = require('../services/newsService.service');
+const newsService = require('../services/newsService.service');
 const Article = require('../models/news.model')
-const LANGUAGE = 'en', PAGE_SIZE = 10;
+const LANGUAGE = 'en',
+ PAGE_SIZE = 5;
 const getNewsByAsset = async (req, res) => {
     const asset = req.query.asset; // Отримання активу з параметрів запиту
-    const url = `https://newsapi.org/v2/everything?q=${asset}&apiKey=${NEWS_API_KEY}&language=${LANGUAGE}&pageSize=${PAGE_SIZE}`;
+    const page = req.query.page || 1;
+    const pageSize = PAGE_SIZE;
+    const url = `https://newsapi.org/v2/everything?q=${asset}&apiKey=${NEWS_API_KEY}&language=${LANGUAGE}&pageSize=${pageSize}&page=${page}&sortBy=publishedAt`;
 
     try {
         const response = await axios.get(url);
@@ -13,8 +16,6 @@ const getNewsByAsset = async (req, res) => {
 
         if (articles.length > 0) {
             const savedArticles = await Promise.all(articles.map(async (article) => {
-                const existingArticle = await Article.findOne({ url: article.url });
-                if (!existingArticle) {
                     const newArticle = new Article({
                         title: article.title,
                         url: article.url,
@@ -22,15 +23,14 @@ const getNewsByAsset = async (req, res) => {
                         asset: asset,
                         publishedAt: article.publishedAt ? new Date(article.publishedAt) : Date.now(),
                     });
-                    await newArticle.save();
-                    return newArticle; // Повертаємо збережену статтю
-                }
-                return existingArticle; // Повертаємо існуючу статтю
+                    await newsService.saveArticle( newArticle );
+                    return newArticle; 
+                
             }));
-
             return res.status(200).json({
                 message: `Знайдено ${articles.length} новин про ${asset}`,
-                articles: savedArticles, // Повертаємо збережені статті
+                total: response.data.totalResults,
+                articles: savedArticles, 
             });
         } else {
             return res.status(404).json({ message: `Не знайдено новин про ${asset}.` });

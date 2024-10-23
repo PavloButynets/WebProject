@@ -85,25 +85,9 @@ const SignUp = () => {
                         }}
                         scrollToFirstError
                     >
-                        <h1 style={{ margin: "15px 0px" }}>Register</h1>
+                        <h1 style={{ margin: "15px 0px" }}>Login</h1>
 
-                        <Form.Item
-                            className={styles.Item}
-                            name="password"
-                            label="Password"
-                            rules={[
-                                {
-                                    required: true,
-                                    //validator: checkPassword,
-                                },
-                            ]}
-                            hasFeedback
-                        >
-                            <Input.Password
-                                className={styles.Input}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </Form.Item>
+                       
 
                         <Form.Item
                             name="nickname"
@@ -124,7 +108,23 @@ const SignUp = () => {
                                 placeholder="Your Nick Name"
                             />
                         </Form.Item>
-
+                        <Form.Item
+                            className={styles.Item}
+                            name="password"
+                            label="Password"
+                            rules={[
+                                {
+                                    required: true,
+                                    //validator: checkPassword,
+                                },
+                            ]}
+                            hasFeedback
+                        >
+                            <Input.Password
+                                className={styles.Input}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </Form.Item>
 
                         <Form.Item {...tailFormItemLayout} className={styles.Item}>
                             <Button
@@ -132,10 +132,10 @@ const SignUp = () => {
                                 htmlType="submit"
                                 className={styles.customButton}
                             >
-                                Register
+                                Login
                             </Button>
                             <span style={{ marginTop: "10px" }}>
-                                Already have an account? <Link to="/login">Login</Link>
+                                Do not have an account yet <Link to="/signup">Regiter</Link>
                             </span>
                         </Form.Item>
                     </Form>
