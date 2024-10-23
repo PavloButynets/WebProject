@@ -111,7 +111,7 @@ class AuthService {
 
     async signToken(data) {
         try {
-            return jwt.sign(data, process.env.SECRET, { expiresIn: "20s" });
+            return jwt.sign(data, process.env.SECRET, { expiresIn: "2m" });
         } catch (error) {
             logger.error(error.message);
             return { status: 500, message: "An error occurred while signing the token" };
@@ -120,7 +120,7 @@ class AuthService {
 
     async signRefreshToken(data) {
         try {
-            return jwt.sign(data, process.env.REFRESH_SECRET, { expiresIn: "21s" });
+            return jwt.sign(data, process.env.REFRESH_SECRET, { expiresIn: "24h" });
         } catch (error) {
             logger.error(error.message);
             return { status: 500, message: "An error occurred while signing the refresh token" };

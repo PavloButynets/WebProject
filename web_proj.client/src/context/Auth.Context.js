@@ -36,10 +36,13 @@ export const AuthProvider = ({ children }) => {
                     setIsLoggedIn(true);
                 } else {
                     console.error("Refresh token failed");
+                    localStorage.removeItem('token');
                     setIsLoggedIn(false);
                 }
             } catch (error) {
                 console.error("Error refreshing token:", error);
+                localStorage.removeItem('token');
+
                 setIsLoggedIn(false);
             }
         };

@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { JSDOM } = require('jsdom');
 const { Readability } = require('@mozilla/readability');
-const Article = require('./../models/asset.model'); 
+const Article = require('./../models/news.model'); 
 
 // Функція для отримання тексту статті
 async function fetchArticleText(url) {
@@ -41,33 +41,38 @@ async function fetchArticleText(url) {
     }
 }
 
-// Функція для збереження статті в базі даних
-const saveArticle = async (title, url, description, asset) => {
+
+class NewsService {
+    // Метод для збереження статті
+ saveArticle = async ({ title, url, description, asset, publishedAt }) => {
     try {
-        const existingArticle = await Article.findOne({ url }); // Перевірка наявності статті
-        if (existingArticle) {
-            console.log(`Стаття вже існує: ${title}`);
-            return existingArticle; // Якщо стаття вже існує, повертаємо її
+
+        if (title === "[Removed]") {
+            return null; 
         }
 
-        // Створення нової статті
+        const existingArticle = await Article.findOne({ url }); 
+        if (existingArticle) {
+            console.log(`Стаття вже існує: ${title}`);
+            return existingArticle; 
+        }
+
         const article = new Article({
             title,
             url,
             description,
             asset,
+            publishedAt,
         });
 
-        await article.save(); // Збереження статті
+        await article.save();
         console.log(`Стаття збережена: ${title}`);
-        return article; // Повертаємо збережену статтю
+        return article; 
     } catch (error) {
         console.error('Помилка при збереженні статті:', error.message);
-        throw new Error('Не вдалося зберегти статтю'); // Обробка помилок
+        throw new Error('Не вдалося зберегти статтю'); 
     }
 };
-
+}
 // Експорт методів
-module.exports = {
-    saveArticle,
-};
+module.exports = new NewsService();

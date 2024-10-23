@@ -4,9 +4,10 @@ import LoginRegisterButton from "../Pages/LoginORRegisterButtons/LoginRegisterBu
 import PrimaryButton from "../components/Buttons/PrimaryButton/PrimaryButton"
 import { useNavigate } from 'react-router-dom';
 import ProcessingEffect from "../components/ProcessingEffect/ProcessingEffect"
-import { Card, Pagination } from 'antd';
+import { Card, Pagination, message } from 'antd';
 import { useAuth } from "../context/Auth.Context";
 import { getAssets } from "../api/getAssets";
+import AssetDetail from './AssetDetail/AssetDetail'
 
 const { Meta } = Card;
 
@@ -15,12 +16,13 @@ const Home = () => {
     const [assets, setAssets] = useState([])
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
+    const [selectedAsset, setSelectedAsset] = useState(false); 
 
     const navigate = useNavigate();
 
     const fetchAssets = async (page) => {
         try {
-            const response = await getAssets({page});
+            const response = await getAssets({ page });
             setAssets(response.data)
             console.log(assets.totalPages)
         } catch (err) {
@@ -36,6 +38,17 @@ const Home = () => {
 
     }, [currentPage])
 
+    const handleAssetClick = (asset) =>{
+        if(isLoggedIn)
+        {
+        setSelectedAsset(true);
+        navigate(`/asset/${asset._id}`, { state: { asset } });
+
+        }else{
+            message.warning("Будь ласка, увійдіть у свій акаунт для перегляду деталей активу.");
+            navigate('/login'); 
+        }
+    }
 
     return (
         <div>
@@ -44,30 +57,34 @@ const Home = () => {
             {loading ?
                 <ProcessingEffect /> :
                 (<div className={styles.container}>
-                    {assets.data.map(asset => (
+                    {assets.data?.map(asset => (
                         <Card
                             key={asset._id}
                             hoverable
                             className={styles.card}
                             cover={<img alt={asset.name} src={asset.image} />}
-                            onClick={() => navigate(`/assets/${asset._id}`)
-                        }
+                            onClick={() => handleAssetClick(asset)}
                         >
                             <Meta title={asset.symbol} description={asset.name} />
                         </Card>
-                        
+
                     ))}
-                    
+
 
                 </div >)
             }
-            <Pagination
-                align="center"
-                defaultCurrent={currentPage}
-                pageSize={5}
-                total={assets.total}
-                onChange={ (page) => setCurrentPage(page)} />
-            <br />
+            {assets.data &&
+                <>
+                    <Pagination
+                        align="center"
+                        defaultCurrent={currentPage}
+                        pageSize={5}
+                        total={assets.total}
+                        onChange={(page) => setCurrentPage(page)} />
+                    <br />
+                </>}
+                {selectedAsset && <AssetDetail  />}
+
         </div>
     )
 }
