@@ -53,8 +53,7 @@ class NewsService {
 
         const existingArticle = await Article.findOne({ url }); 
         if (existingArticle) {
-            console.log(`Стаття вже існує: ${title}`);
-            return existingArticle; 
+           return existingArticle; 
         }
 
         const article = new Article({
@@ -66,11 +65,9 @@ class NewsService {
         });
 
         await article.save();
-        console.log(`Стаття збережена: ${title}`);
         return article; 
     } catch (error) {
         console.error('Помилка при збереженні статті:', error.message);
-        throw new Error('Не вдалося зберегти статтю'); 
     }
 };
 }

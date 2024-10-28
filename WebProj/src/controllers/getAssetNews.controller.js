@@ -2,11 +2,15 @@ const axios = require('axios');
 const { NEWS_API_KEY } = process.env;
 const newsService = require('../services/newsService.service');
 const Article = require('../models/news.model')
+
 const LANGUAGE = 'en',
  PAGE_SIZE = 5;
 const getNewsByAsset = async (req, res) => {
     const asset = req.query.asset; // Отримання активу з параметрів запиту
     const page = req.query.page || 1;
+    if (!asset) {
+        return res.status(400).json({ message: 'Актив є обов\'язковим.' });
+    }
     const pageSize = PAGE_SIZE;
     const url = `https://newsapi.org/v2/everything?q=${asset}&apiKey=${NEWS_API_KEY}&language=${LANGUAGE}&pageSize=${pageSize}&page=${page}&sortBy=publishedAt`;
 
