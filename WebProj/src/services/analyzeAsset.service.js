@@ -1,5 +1,3 @@
-// services/newsAnalysisService.js
-
 const axios = require('axios');
 const { JSDOM } = require('jsdom');
 const { Readability } = require('@mozilla/readability');
@@ -107,24 +105,20 @@ const analyzeAsset = async (newsUrls, asset, userId,) => {
     }
 };
 
-// Функція для розділення тексту на чанки
 const chunkText = (text, maxTokens) => {
-    const words = text.split(/\s+/); // Розбити текст на слова
+    const words = text.split(/\s+/); 
     const chunks = [];
     let currentChunk = [];
 
     for (let word of words) {
-        // Додаємо слово до поточного чанка
         currentChunk.push(word);
 
-        // Якщо досягли максимальної кількості токенів, зберігаємо чанк
         if (currentChunk.join(' ').split(/\s+/).length >= maxTokens) {
             chunks.push(currentChunk.join(' '));
-            currentChunk = []; // Очищаємо поточний чанк
+            currentChunk = []; 
         }
     }
 
-    // Додаємо останній чанк, якщо він не порожній
     if (currentChunk.length > 0) {
         chunks.push(currentChunk.join(' '));
     }

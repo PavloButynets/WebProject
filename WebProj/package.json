@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./app.js",
+    "start:8001": "cross-env PORT=8001 node ./app.js",
+    "start:8002": "cross-env PORT=8002 node ./app.js",
+    "start:8003": "cross-env PORT=8003 node ./app.js"
   },
   "keywords": [],
   "author": "",
@@ -23,11 +26,15 @@
     "jsdom": "^25.0.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.9.0",
+    "mongodb-queue": "^4.0.0",
     "mongoose": "^8.7.2",
     "multer": "^1.4.5-lts.1",
     "openai": "^4.67.3",
     "pino": "^9.5.0",
     "pino-pretty": "^11.3.0",
     "readability": "^0.1.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }

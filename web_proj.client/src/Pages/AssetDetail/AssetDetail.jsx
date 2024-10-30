@@ -5,6 +5,7 @@ import PrimaryButton from '../../components/Buttons/PrimaryButton/PrimaryButton'
 import styles from "./AssetDetail.module.css";
 import { getNewsByAsset } from "../../api/getNewsByAsset";
 import { getStatus } from '../../api/getStatus';
+import { cancelAnalysis } from "../../api/cancelAnalysis"; 
 import { analyzeByNews } from '../../api/analize';
 import { getHistory } from "../../api/getHistory";
 import { format } from 'date-fns';
@@ -19,9 +20,10 @@ const AssetDetail = () => {
     const asset = location.state?.asset;
     const [loading, setLoading] = useState(true);
     const [assetNews, setAssetNews] = useState([]);
-    const [newsForAnalysis, setNewsForAnalysis] = useState(5); // Default to 5 articles
+    const [newsForAnalysis, setNewsForAnalysis] = useState(5); 
     const [currentPage, setCurrentPage] = useState(1);
     const [analysisHistory, setAnalysisHistory] = useState([]);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
 
     const fetchAssetDetail = async () => {
         if (!asset) {
@@ -65,7 +67,9 @@ const AssetDetail = () => {
 
     const handleAnalyzeClick = async () => {
         try {
+            setIsAnalyzing(true);
             const response = await analyzeByNews(asset.name, newsForAnalysis);
+
             console.log(response.data);
             message.success(response.data.message);
 
@@ -81,6 +85,13 @@ const AssetDetail = () => {
 
             await pollAnalysisStatus();
         } catch (error) {
+            if (error.response && error.response.status === 409) {
+                message.error(error.response.data.error || `Аналіз для активу ${asset.name} вже виконується.`);
+            } else {
+                console.error("Error fetching asset news:", error);
+                message.error("Помилка при отриманні новин для активу");
+            }
+            
             console.error("Error fetching asset news:", error);
         }
     };
@@ -129,7 +140,25 @@ const AssetDetail = () => {
             }
         }
     };
-
+    const handleСancelAnalysis = async (assetName) => {
+        try {
+            const response = await cancelAnalysis(assetName); // Виклик API для скасування аналізу
+            if (response.status === 200) {
+                message.success("Аналіз скасовано");
+                setAnalysisHistory(prev =>
+                    prev.map(analysis =>
+                        analysis.asset === assetName && analysis.status !== "completed"
+                            ? { ...analysis, status: "cancelled" }
+                            : analysis
+                    )
+                );
+            }
+        } catch (error) {
+            console.error("Помилка при скасуванні аналізу:", error);
+            message.error("Не вдалося скасувати аналіз");
+        }
+    };
+    
     if (loading) return <Spin size="large" className={styles.loading} />;
 
     return (
@@ -190,26 +219,36 @@ const AssetDetail = () => {
                 </Select>
 
                 <PrimaryButton className={styles.analyzeButton} onClick={handleAnalyzeClick}>Analyze by news</PrimaryButton>
+    
             </Card>
             <Card className={styles.card}>
                 <div className={styles.analyseResultPlaceholder}>
                     <Title level={4}>History of analyzes</Title>
                     <List
-                        itemLayout="vertical"
-                        dataSource={analysisHistory}
-                        renderItem={analysis => (
-                            <List.Item key={analysis.analyzedAt}>
-                                <Title level={5}>{analysis.asset}</Title>
-                                <Paragraph>{analysis.status}</Paragraph>
-                                <span className={styles.publishedAt}>
-                                    {format(new Date(analysis.analyzedAt), 'dd MMMM yyyy, HH:mm')}
-                                </span>
-                                {analysis.result && (
-                                    <Paragraph><strong>Result:</strong> {analysis.result}</Paragraph>
-                                )}
-                            </List.Item>
-                        )}
-                    />
+    itemLayout="vertical"
+    dataSource={analysisHistory}
+    renderItem={analysis => (
+        <List.Item key={analysis.analyzedAt}>
+            <Title level={5}>{analysis.asset}</Title>
+            <Paragraph>{analysis.status}</Paragraph>
+            <span className={styles.publishedAt}>
+                {format(new Date(analysis.analyzedAt), 'dd MMMM yyyy, HH:mm')}
+            </span>
+            {analysis.result && (
+                <Paragraph><strong>Result:</strong> {analysis.result}</Paragraph>
+            )}
+            {analysis.status !== "completed" && (
+                <PrimaryButton
+                    onClick={() => handleСancelAnalysis(analysis.asset)}
+                    className={styles.cancelButton}
+                >
+                    Скасувати
+                </PrimaryButton>
+            )}
+        </List.Item>
+    )}
+/>
+
                 </div>
             </Card>
         </div>
