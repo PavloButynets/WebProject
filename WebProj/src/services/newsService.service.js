@@ -3,9 +3,7 @@ const { JSDOM } = require('jsdom');
 const { Readability } = require('@mozilla/readability');
 const Article = require('./../models/news.model'); 
 
-// Функція для отримання тексту статті
 async function fetchArticleText(url) {
-    // Перевірка валідності URL
     if (!url || typeof url !== 'string') {
         console.error('Невірний URL:', url);
         return null;
@@ -29,7 +27,6 @@ async function fetchArticleText(url) {
             return {
                 title: article.title,
                 content: article.textContent,
-                // Можна додати інші поля, такі як author, date, etc.
             };
         } else {
             console.log('Не вдалося розпізнати основний текст статті.');
@@ -53,7 +50,9 @@ class NewsService {
 
         const existingArticle = await Article.findOne({ url }); 
         if (existingArticle) {
+
            return existingArticle; 
+
         }
 
         const article = new Article({
@@ -65,9 +64,13 @@ class NewsService {
         });
 
         await article.save();
+
         return article; 
     } catch (error) {
         console.error('Помилка при збереженні статті:', error.message);
+
+        throw new Error('Не вдалося зберегти статтю'); 
+
     }
 };
 }

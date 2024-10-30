@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { Card, Typography, Spin, Pagination, List, message, Select } from 'antd';
 import { useLocation } from 'react-router-dom';
 import PrimaryButton from '../../components/Buttons/PrimaryButton/PrimaryButton';
@@ -14,24 +15,41 @@ const { Option } = Select;
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+import { Card, Typography, Spin, Pagination, List } from 'antd';
+import { useLocation } from 'react-router-dom';
+import PrimaryButton  from '../../components/Buttons/PrimaryButton/PrimaryButton'
+import styles from "./AssetDetail.module.css";
+import { getNewsByAsset } from "../../api/getNewsByAsset";
+import { format } from 'date-fns';
+
+const { Title, Paragraph } = Typography;
+
+
 const AssetDetail = () => {
     const location = useLocation();
     const asset = location.state?.asset;
     const [loading, setLoading] = useState(true);
     const [assetNews, setAssetNews] = useState([]);
+
     const [newsForAnalysis, setNewsForAnalysis] = useState(5); // Default to 5 articles
     const [currentPage, setCurrentPage] = useState(1);
     const [analysisHistory, setAnalysisHistory] = useState([]);
 
+
+    const [ currentPage, setCurrentPage] = useState(1);
+
     const fetchAssetDetail = async () => {
         if (!asset) {
-            console.error("Asset not found in state.");
+            console.error("Актив не знайдено в стані.");
+
             setLoading(false);
             return;
         }
 
         try {
+
             setLoading(true);
+
             const response = await getNewsByAsset(`asset=${asset.name}&page=${currentPage}`);
             setAssetNews(response.data);
         } catch (error) {
@@ -40,6 +58,7 @@ const AssetDetail = () => {
             setLoading(false);
         }
     };
+
 
     const fetchAnalysisHistory = async () => {
         if (!asset) {
@@ -130,22 +149,34 @@ const AssetDetail = () => {
         }
     };
 
+    useEffect(() => {
+
+        fetchAssetDetail(currentPage)
+
+    }, [currentPage])
+
+
     if (loading) return <Spin size="large" className={styles.loading} />;
 
     return (
         <div className={styles.container}>
             <Card className={styles.card}>
-                <div className={styles.newsPlaceholder}>
+
+
+
+            <div className={styles.newsPlaceholder}>
                     <Title level={4}>Latest News</Title>
-                    {assetNews.articles?.length > 0 ? (
+                    {assetNews.articles.length > 0 ? (
+
                         <List
                             itemLayout="vertical"
                             dataSource={assetNews.articles}
                             renderItem={news => (
                                 <List.Item key={news.id}>
                                     <Title level={5}>{news.title}</Title>
-                                    <Paragraph>{news.summary}</Paragraph>
-                                    <div className={styles.newsFooter}>
+
+                                    <Paragraph>{news.summary}</Paragraph> 
+                  <div className={styles.newsFooter}>
                                         <a href={news.url} target="_blank" rel="noopener noreferrer">Read more</a>
                                         <span className={styles.publishedAt}>
                                             {format(new Date(news.publishedAt), 'dd MMMM yyyy, HH:mm')}
@@ -158,6 +189,7 @@ const AssetDetail = () => {
                         <Paragraph>No news available for this asset.</Paragraph>
                     )}
                 </div>
+
                 {assetNews && (
                     <>
                         <Pagination
@@ -169,6 +201,8 @@ const AssetDetail = () => {
                         <br />
                     </>
                 )}
+
+
             </Card>
             <Card className={styles.card}>
                 <img src={asset.image} alt={asset.name} className={styles.image} />
@@ -178,7 +212,7 @@ const AssetDetail = () => {
                 <p><strong>Category:</strong> {asset.category}</p>
                 <p><strong>Description:</strong> {asset.description}</p>
 
-                {/* Dropdown for selecting number of articles */}
+
                 <Select
                     defaultValue={5}
                     style={{ width: 120, marginBottom: 16 }}
@@ -211,6 +245,15 @@ const AssetDetail = () => {
                         )}
                     />
                 </div>
+
+                <PrimaryButton className={styles.analyzeButton}>Analyze by news</PrimaryButton>
+               
+            </Card>
+            <Card className={styles.card}>
+            <div className={styles.analyseResultPlaceholder}>
+            <Title level={4}>History of analyzes</Title>
+            </ div>
+
             </Card>
         </div>
     );
