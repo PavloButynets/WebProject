@@ -20,7 +20,7 @@ const AssetDetail = () => {
     const asset = location.state?.asset;
     const [loading, setLoading] = useState(true);
     const [assetNews, setAssetNews] = useState([]);
-    const [newsForAnalysis, setNewsForAnalysis] = useState(5); 
+    const [newsForAnalysis, setNewsForAnalysis] = useState(5); // Default to 5 articles
     const [currentPage, setCurrentPage] = useState(1);
     const [analysisHistory, setAnalysisHistory] = useState([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -92,7 +92,6 @@ const AssetDetail = () => {
                 message.error("Помилка при отриманні новин для активу");
             }
             
-            console.error("Error fetching asset news:", error);
         }
     };
 
