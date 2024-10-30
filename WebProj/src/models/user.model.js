@@ -12,7 +12,8 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         min: 6
-    }
+    },
+    analysisHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Analysis' }]
 })
 
 module.exports = mongoose.model('User', userSchema)
