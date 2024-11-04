@@ -1,3 +1,4 @@
+
 const axios = require('axios');
 const { JSDOM } = require('jsdom');
 const { Readability } = require('@mozilla/readability');
@@ -11,6 +12,7 @@ const configuration = new OpenAI({
   });
   const openai = new OpenAI(configuration);
 
+
 const fetchArticleText = async (url) => {
     try {
 
@@ -23,24 +25,29 @@ const fetchArticleText = async (url) => {
 
         const dom = new JSDOM(data, { virtualConsole });
 
+
         const reader = new Readability(dom.window.document);
         const article = reader.parse();
 
         if (article) {
+
             logger.info('Article text successfully fetched.');
 
             return article.textContent; 
+
         } else {
             console.log('Не вдалося розпізнати основний текст статті.');
             return null;
         }
     } catch (error) {
+
         logger.warn('Failed to recognize the main text of the article.');
 
-        console.error('Помилка при отриманні тексту статті:', error);
+
         return null;
     }
 };
+
 
 const analyzeChunk = async (chunk) => {
     try {
@@ -71,7 +78,9 @@ const analyzeChunk = async (chunk) => {
 
 const analyzeAsset = async (newsUrls, asset, userId,) => {
     try {
+
         logger.info(`Starting analysis for asset: ${asset} by user: ${userId}`);
+
 
         const analysis = new AnalysisModel({
             userId,
@@ -80,8 +89,9 @@ const analyzeAsset = async (newsUrls, asset, userId,) => {
             analyzedAt: new Date(),
             status: "Статті знайдено, відбувається парсинг сторінок"
         });
+
         await analysis.save();
-        
+
         const allArticleTexts = []; 
 
         for (const url of newsUrls) {
@@ -90,7 +100,9 @@ const analyzeAsset = async (newsUrls, asset, userId,) => {
                 allArticleTexts.push(articleText); 
             }
         }
+
         //await new Promise((resolve) => setTimeout(resolve, 5000));
+
 
         analysis.status = "Текст статей отримано, відбувається аналіз";
 
@@ -98,13 +110,16 @@ const analyzeAsset = async (newsUrls, asset, userId,) => {
         const combinedText = allArticleTexts.join('\n\n'); 
 
         const chunks = chunkText(combinedText, 5000); 
+
         logger.info(`Analyzing ${chunks.length} chunks...`);
+
 
         const results = await Promise.all(chunks.map(analyzeChunk)); 
         
         analysis.result = results.join('\n\n'); 
         analysis.status = "completed"; 
         analysis.analyzedAt = new Date()
+
         
         await analysis.save();
         logger.info(`Analysis completed successfully for asset: ${asset}`);
@@ -112,13 +127,14 @@ const analyzeAsset = async (newsUrls, asset, userId,) => {
     } catch (error) {
         logger.error('Error analyzing asset:', error);
 
-        console.error('Помилка при аналізі активу:', error);
         throw new Error('Помилка аналізу активу');
     }
 };
 
+
 const chunkText = (text, maxTokens) => {
     const words = text.split(/\s+/); 
+
     const chunks = [];
     let currentChunk = [];
 
@@ -130,6 +146,7 @@ const chunkText = (text, maxTokens) => {
             currentChunk = []; 
         }
     }
+
 
     if (currentChunk.length > 0) {
         chunks.push(currentChunk.join(' '));
@@ -145,6 +162,7 @@ const getNewsUrls = async (asset, newsCount) => {
     } catch (error) {
         
         logger.error('Error fetching news from database:', error);
+
         throw new Error('Помилка отримання новин');
     }
 };

@@ -1,6 +1,6 @@
 const Article = require('./../models/news.model'); 
-const { logger } = require("../utils/logger");
 
+const { logger } = require("../utils/logger");
 class NewsService {
  saveArticle = async ({ title, url, description, asset, publishedAt }) => {
     try {
@@ -27,11 +27,13 @@ class NewsService {
         });
 
         await article.save();
+
         logger.info(`Article saved: ${title} (${url})`);
 
         return article; 
     } catch (error) {
         logger.error(`Error saving article: ${error.message}`);
+
         throw new Error('Не вдалося зберегти статтю'); 
 
     }

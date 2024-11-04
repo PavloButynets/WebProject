@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+
 import { Card, Typography, Spin, Pagination, List, message, Select } from 'antd';
+
 import { useLocation } from 'react-router-dom';
 import PrimaryButton from '../../components/Buttons/PrimaryButton/PrimaryButton';
 import styles from "./AssetDetail.module.css";
@@ -15,11 +17,13 @@ const { Option } = Select;
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+
 const AssetDetail = () => {
     const location = useLocation();
     const asset = location.state?.asset;
     const [loading, setLoading] = useState(true);
     const [assetNews, setAssetNews] = useState([]);
+
     const [newsForAnalysis, setNewsForAnalysis] = useState(5);
     const [currentPage, setCurrentPage] = useState(1);
     const [analysisHistory, setAnalysisHistory] = useState([]);
@@ -27,12 +31,13 @@ const AssetDetail = () => {
     const fetchAssetDetail = async () => {
         if (!asset) {
             console.error("Asset not found in state.");
+
             setLoading(false);
             return;
         }
 
         try {
-            setLoading(true);
+
             const response = await getNewsByAsset(`asset=${asset.name}&page=${currentPage}`);
             setAssetNews(response.data);
         } catch (error) {
@@ -41,6 +46,7 @@ const AssetDetail = () => {
             setLoading(false);
         }
     };
+
 
     const fetchAnalysisHistory = async () => {
         if (!asset) {
@@ -59,6 +65,7 @@ const AssetDetail = () => {
     useEffect(() => {
         fetchAssetDetail();
     }, [currentPage]);
+
 
     useEffect(() => {
         fetchAnalysisHistory();
@@ -156,22 +163,27 @@ const AssetDetail = () => {
         }
     };
 
+
     if (loading) return <Spin size="large" className={styles.loading} />;
 
     return (
         <div className={styles.container}>
             <Card className={styles.card}>
+
                 <div className={styles.newsPlaceholder}>
                     <Title level={4}>Latest News</Title>
                     {assetNews.articles?.length > 0 ? (
+
                         <List
                             itemLayout="vertical"
                             dataSource={assetNews.articles}
                             renderItem={news => (
                                 <List.Item key={news.id}>
                                     <Title level={5}>{news.title}</Title>
+
                                     <Paragraph>{news.summary}</Paragraph>
                                     <div className={styles.newsFooter}>
+
                                         <a href={news.url} target="_blank" rel="noopener noreferrer">Read more</a>
                                         <span className={styles.publishedAt}>
                                             {format(new Date(news.publishedAt), 'dd MMMM yyyy, HH:mm')}
@@ -184,6 +196,7 @@ const AssetDetail = () => {
                         <Paragraph>No news available for this asset.</Paragraph>
                     )}
                 </div>
+
                 {assetNews && (
                     <>
                         <Pagination
@@ -195,6 +208,7 @@ const AssetDetail = () => {
                         <br />
                     </>
                 )}
+
             </Card>
             <Card className={styles.card}>
                 <img src={asset.image} alt={asset.name} className={styles.image} />
@@ -203,6 +217,8 @@ const AssetDetail = () => {
                 <p><strong>Market Cap:</strong> ${asset.market_cap.toLocaleString()}</p>
                 <p><strong>Category:</strong> {asset.category}</p>
                 <p><strong>Description:</strong> {asset.description}</p>
+
+
 
                 <Select
                     defaultValue={5}
@@ -215,6 +231,7 @@ const AssetDetail = () => {
                 </Select>
 
                 <PrimaryButton className={styles.analyzeButton} onClick={handleAnalyzeClick}>Analyze by news</PrimaryButton>
+
 
             </Card>
             <Card className={styles.card}>
@@ -247,6 +264,7 @@ const AssetDetail = () => {
                     />
 
                 </div>
+
             </Card>
         </div>
     );
