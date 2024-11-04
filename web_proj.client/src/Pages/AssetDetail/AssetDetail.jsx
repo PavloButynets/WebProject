@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 
 import { Card, Typography, Spin, Pagination, List, message, Select } from 'antd';
+
 import { useLocation } from 'react-router-dom';
 import PrimaryButton from '../../components/Buttons/PrimaryButton/PrimaryButton';
 import styles from "./AssetDetail.module.css";
 import { getNewsByAsset } from "../../api/getNewsByAsset";
 import { getStatus } from '../../api/getStatus';
+import { cancelAnalysis } from "../../api/cancelAnalysis";
 import { analyzeByNews } from '../../api/analize';
 import { getHistory } from "../../api/getHistory";
 import { format } from 'date-fns';
@@ -15,15 +17,6 @@ const { Option } = Select;
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-import { Card, Typography, Spin, Pagination, List } from 'antd';
-import { useLocation } from 'react-router-dom';
-import PrimaryButton  from '../../components/Buttons/PrimaryButton/PrimaryButton'
-import styles from "./AssetDetail.module.css";
-import { getNewsByAsset } from "../../api/getNewsByAsset";
-import { format } from 'date-fns';
-
-const { Title, Paragraph } = Typography;
-
 
 const AssetDetail = () => {
     const location = useLocation();
@@ -31,24 +24,19 @@ const AssetDetail = () => {
     const [loading, setLoading] = useState(true);
     const [assetNews, setAssetNews] = useState([]);
 
-    const [newsForAnalysis, setNewsForAnalysis] = useState(5); // Default to 5 articles
+    const [newsForAnalysis, setNewsForAnalysis] = useState(5);
     const [currentPage, setCurrentPage] = useState(1);
     const [analysisHistory, setAnalysisHistory] = useState([]);
 
-
-    const [ currentPage, setCurrentPage] = useState(1);
-
     const fetchAssetDetail = async () => {
         if (!asset) {
-            console.error("Актив не знайдено в стані.");
+            console.error("Asset not found in state.");
 
             setLoading(false);
             return;
         }
 
         try {
-
-            setLoading(true);
 
             const response = await getNewsByAsset(`asset=${asset.name}&page=${currentPage}`);
             setAssetNews(response.data);
@@ -78,6 +66,7 @@ const AssetDetail = () => {
         fetchAssetDetail();
     }, [currentPage]);
 
+
     useEffect(() => {
         fetchAnalysisHistory();
     }, []);
@@ -85,6 +74,7 @@ const AssetDetail = () => {
     const handleAnalyzeClick = async () => {
         try {
             const response = await analyzeByNews(asset.name, newsForAnalysis);
+
             console.log(response.data);
             message.success(response.data.message);
 
@@ -96,11 +86,17 @@ const AssetDetail = () => {
             };
             setAnalysisHistory(prev => [newAnalysis, ...prev]);
 
-            await delay(12000);
+            await delay(2000);
 
             await pollAnalysisStatus();
         } catch (error) {
-            console.error("Error fetching asset news:", error);
+            if (error.response && error.response.status === 409) {
+                message.error(error.response.data.error || `Аналіз для активу ${asset.name} вже виконується.`);
+            } else {
+                console.error("Error fetching asset news:", error);
+                message.error("Помилка при отриманні новин для активу");
+            }
+
         }
     };
 
@@ -108,7 +104,7 @@ const AssetDetail = () => {
         while (true) {
             try {
                 const response = await getStatus(asset.name);
-                console.log(response.data);
+                console.log(response.data)
 
                 setAnalysisHistory(prev => {
                     const lastAnalysis = prev[0];
@@ -148,12 +144,24 @@ const AssetDetail = () => {
             }
         }
     };
-
-    useEffect(() => {
-
-        fetchAssetDetail(currentPage)
-
-    }, [currentPage])
+    const handleСancelAnalysis = async (assetName) => {
+        try {
+            const response = await cancelAnalysis(assetName); // Виклик API для скасування аналізу
+            if (response.status === 200) {
+                message.success("Аналіз скасовано");
+                setAnalysisHistory(prev =>
+                    prev.map(analysis =>
+                        analysis.asset === assetName && analysis.status !== "completed"
+                            ? { ...analysis, status: "cancelled" }
+                            : analysis
+                    )
+                );
+            }
+        } catch (error) {
+            console.error("Помилка при скасуванні аналізу:", error);
+            message.error("Не вдалося скасувати аналіз");
+        }
+    };
 
 
     if (loading) return <Spin size="large" className={styles.loading} />;
@@ -162,11 +170,9 @@ const AssetDetail = () => {
         <div className={styles.container}>
             <Card className={styles.card}>
 
-
-
-            <div className={styles.newsPlaceholder}>
+                <div className={styles.newsPlaceholder}>
                     <Title level={4}>Latest News</Title>
-                    {assetNews.articles.length > 0 ? (
+                    {assetNews.articles?.length > 0 ? (
 
                         <List
                             itemLayout="vertical"
@@ -175,8 +181,9 @@ const AssetDetail = () => {
                                 <List.Item key={news.id}>
                                     <Title level={5}>{news.title}</Title>
 
-                                    <Paragraph>{news.summary}</Paragraph> 
-                  <div className={styles.newsFooter}>
+                                    <Paragraph>{news.summary}</Paragraph>
+                                    <div className={styles.newsFooter}>
+
                                         <a href={news.url} target="_blank" rel="noopener noreferrer">Read more</a>
                                         <span className={styles.publishedAt}>
                                             {format(new Date(news.publishedAt), 'dd MMMM yyyy, HH:mm')}
@@ -202,7 +209,6 @@ const AssetDetail = () => {
                     </>
                 )}
 
-
             </Card>
             <Card className={styles.card}>
                 <img src={asset.image} alt={asset.name} className={styles.image} />
@@ -211,6 +217,7 @@ const AssetDetail = () => {
                 <p><strong>Market Cap:</strong> ${asset.market_cap.toLocaleString()}</p>
                 <p><strong>Category:</strong> {asset.category}</p>
                 <p><strong>Description:</strong> {asset.description}</p>
+
 
 
                 <Select
@@ -224,6 +231,8 @@ const AssetDetail = () => {
                 </Select>
 
                 <PrimaryButton className={styles.analyzeButton} onClick={handleAnalyzeClick}>Analyze by news</PrimaryButton>
+
+
             </Card>
             <Card className={styles.card}>
                 <div className={styles.analyseResultPlaceholder}>
@@ -241,18 +250,20 @@ const AssetDetail = () => {
                                 {analysis.result && (
                                     <Paragraph><strong>Result:</strong> {analysis.result}</Paragraph>
                                 )}
+                                {analysis.status !== "completed" && analysis.status !== "cancelled" && (
+
+                                    <PrimaryButton
+                                        onClick={() => handleСancelAnalysis(analysis.asset)}
+                                        className={styles.cancelButton}
+                                    >
+                                        Скасувати
+                                    </PrimaryButton>
+                                )}
                             </List.Item>
                         )}
                     />
-                </div>
 
-                <PrimaryButton className={styles.analyzeButton}>Analyze by news</PrimaryButton>
-               
-            </Card>
-            <Card className={styles.card}>
-            <div className={styles.analyseResultPlaceholder}>
-            <Title level={4}>History of analyzes</Title>
-            </ div>
+                </div>
 
             </Card>
         </div>

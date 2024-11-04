@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const cors = require("cors");
 const routes = require('./src/routes/routes')
-const { handleError } = require("./src/utils/error");
 
 const PORT = process.env.PORT;
 

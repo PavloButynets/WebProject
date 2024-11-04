@@ -9,10 +9,12 @@ class AuthService {
         try {
             const { password, username } = user;
             if (!password || !username) {
+                logger.warn("Sign up attempt with missing fields");
                 return { status: 400, message: "All fields required" };
             }
 
             if (validateUser(username, password)) {
+                
                 const salt = await bcrypt.genSalt();
                 const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -36,7 +38,7 @@ class AuthService {
                     id: newUser._id,
                     username: newUser.username,
                 });
-
+                logger.info(`User signed up: ${username}`);
                 return {
 
                     token,
@@ -47,6 +49,7 @@ class AuthService {
                     },
                 };
             } else {
+                logger.warn("Validation failed for user input");
                 return { status: 401, message: "Input validation error" };
             }
         } catch (error) {
@@ -62,12 +65,14 @@ class AuthService {
             const user = await User.findOne({ username });
 
             if (!user) {
+                logger.warn(`Login attempt for non-existent user: ${username}`);
                 return { status: 401, message: "Username or password incorrect." };
             }
 
             const isCorrectPassword = await bcrypt.compare(password, user.password);
 
             if (!isCorrectPassword) {
+                logger.warn(`Login attempt for non-existent user: ${username}`);
                 return { status: 401, message: "Username or password incorrect." };
             }
 
@@ -77,7 +82,7 @@ class AuthService {
                 id: user._id,
                 username: user.username,
             });
-
+            logger.info(`User logged in: ${username}`);
             return {
                 token,
                 refreshToken,

@@ -2,7 +2,6 @@ const express = require('express');
 const Asset = require('../models/asset.model');
 const router = express.Router();
 
-// Маршрут для отримання відпагінованих активів з фільтрацією та пошуком
 const getAssets = async (req, res) => {
     try {
         const { category = '', searchQuery = '', page = 1, limit = 8 } = req.query;
