@@ -93,7 +93,6 @@ const refreshToken = async (req, res) => {
         }
         const result = await authService.generateToken(req.cookies.refreshToken);
         if (result.status === 401) {
-            // Refresh token expired, log out the user
             res.clearCookie("refreshToken", {
                 httpOnly: true,
                 sameSite: process.env.NODE_ENV === "development" ? "Lax" : "None",
@@ -101,7 +100,7 @@ const refreshToken = async (req, res) => {
             });
             return res.status(401).json({
                 success: false,
-                message: result.message, // "Refresh token expired. Please log in again."
+                message: result.message, 
             });
         }
         return res.json({ 

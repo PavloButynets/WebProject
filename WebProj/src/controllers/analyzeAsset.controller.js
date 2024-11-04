@@ -1,14 +1,20 @@
 const { getNewsUrls, analyzeAsset } = require('../services/analyzeAsset.service');
-const User = require('../models/user.model');
 const AnalysisModel = require('../models/analysis.model');
 const { Worker } = require('worker_threads');
-const { get } = require('http');
 
 let activeWorkers = {}; 
+const MAX_WORKERS_PER_USER = 3; 
 
 const analyzeAssetNews = async (req, res) => {
     const { asset, newsCount } = req.body;
     const userId = req.user.id;
+
+    const activeUserWorkers = activeWorkers[userId] ? Object.keys(activeWorkers[userId]).length : 0;
+    if (activeUserWorkers >= MAX_WORKERS_PER_USER) {
+        return res.status(429).json({
+            error: `Досягнуто максимуму паралельних аналізів для користувача. Дочекайтеся завершення поточного аналізу.`
+        });
+    }
 
     if (typeof newsCount !== 'number' || newsCount < 1 || newsCount > 50) {
         return res.status(400).json({
@@ -21,7 +27,7 @@ const analyzeAssetNews = async (req, res) => {
             error: `Аналіз для активу ${asset} вже виконується.`
         });
     }
-    
+
     try {
         console.log(asset, newsCount)
         const newsUrls = await getNewsUrls(asset, newsCount);
@@ -35,7 +41,6 @@ const analyzeAssetNews = async (req, res) => {
             status: "Start of analysis"
         });
 
-        // Створення нового робочого потоку
         const worker = new Worker('C:\\IT\\WEB_ЛНУ\\WebProj\\WebProj\\WebProj\\src\\utils\\worker.js');
         
         activeWorkers[userId] = activeWorkers[userId] || {};
@@ -46,6 +51,7 @@ const analyzeAssetNews = async (req, res) => {
 
         worker.on('message', (message) => {
             if (message.status === 'completed' || message.status === 'error') {
+                delete activeWorkers[userId][asset];
                 if (Object.keys(activeWorkers[userId]).length === 0) {
                     delete activeWorkers[userId];
                 }
@@ -63,7 +69,7 @@ const getAnalysisStatus = async (req, res) => {
     const asset = req.query.asset;
 
     try {
-        const analysis = await AnalysisModel.findOne({ userId: userId, asset: asset });
+        const analysis = await AnalysisModel.findOne({ userId: userId, asset: asset }).sort({ analyzedAt: -1 });;
 
         if (!analysis) {
             return res.status(404).json({ error: 'Аналіз не знайдено або вже завершено' });
@@ -82,19 +88,15 @@ const getAnalysisStatus = async (req, res) => {
 };
 const cancelAnalysis = async (req, res) => {
     const userId = req.user.id;
-    const { asset } = req.query; // The asset to cancel
+    const { asset } = req.query; 
 
-    // Check if the worker exists for the user and asset
     if (activeWorkers[userId] && activeWorkers[userId][asset]) {
-        // Terminate the worker
         activeWorkers[userId][asset].terminate();
 
-        // Remove the entry for this asset
         delete activeWorkers[userId][asset];
 
         await AnalysisModel.deleteOne({ userId: userId, asset: asset });
 
-        // Remove the user entry if there are no more workers
         if (Object.keys(activeWorkers[userId]).length === 0) {
             delete activeWorkers[userId];
         }

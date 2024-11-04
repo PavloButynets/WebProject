@@ -8,7 +8,6 @@ const { cancelAnalysis } = require('../controllers/analyzeAsset.controller')
 const verifyToken = require('../middlewares/verifyToken')
 
 
-const verifyToken = require('../middlewares/verifyToken')
 
 
 router.route('/get-assets').get(getAssets)

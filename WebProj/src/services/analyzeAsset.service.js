@@ -4,14 +4,16 @@ const { Readability } = require('@mozilla/readability');
 const { OpenAI  } = require('openai');
 const NewsModel = require('../models/news.model')
 const AnalysisModel = require('../models/analysis.model')
+const { logger } = require("../utils/logger");
+
 const configuration = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY ,
   });
   const openai = new OpenAI(configuration);
 
-// Функція для вилучення тексту статті з URL
 const fetchArticleText = async (url) => {
     try {
+
         const { data } = await axios.get(url, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36' }
         });
@@ -21,52 +23,55 @@ const fetchArticleText = async (url) => {
 
         const dom = new JSDOM(data, { virtualConsole });
 
-        // Використовуємо бібліотеку Readability для вилучення основного контенту
         const reader = new Readability(dom.window.document);
         const article = reader.parse();
 
         if (article) {
-            return article.textContent; // Основний текст статті
+            logger.info('Article text successfully fetched.');
+
+            return article.textContent; 
         } else {
             console.log('Не вдалося розпізнати основний текст статті.');
             return null;
         }
     } catch (error) {
+        logger.warn('Failed to recognize the main text of the article.');
+
         console.error('Помилка при отриманні тексту статті:', error);
         return null;
     }
 };
 
-// Функція для аналізу одного чанка
 const analyzeChunk = async (chunk) => {
     try {
-        // const response = await openai.chat.completions.create({
-        //     model: 'gpt-4',
-        //     messages: [
-        //         {
-        //             role: 'user',
-        //             content: `Ось інформація про актив:\n\n${chunk}\n\nДай, будь ласка, короткий фінансовий аналіз і прогноз цього активу.`,
-        //         },
-        //     ],
-        //     max_tokens: 500,
-        //     temperature: 0.7,
-        // });
-        // return response.choices[0].message.content.trim();
+        logger.info('Analyzing chunk of text...');
 
-         await new Promise((resolve) => setTimeout(resolve, 20000));
+        const response = await openai.chat.completions.create({
+            model: 'gpt-4',
+            messages: [
+                {
+                    role: 'user',
+                    content: `Here is the information about the asset:\n\n${chunk}\n\nPlease give a brief financial analysis and forecast of this asset.`,                },
+            ],
+            max_tokens: 500,
+            temperature: 0.7,
+        });
+        return response.choices[0].message.content.trim();
+
+        //  await new Promise((resolve) => setTimeout(resolve, 20000));
         
-         // Імітація результату аналізу
-         const simulatedResponse = `Фінансовий аналіз для активу:\n\n${chunk}\n\nПрогноз: Зростання на 10% у наступні 6 місяців.`;
-         
-         return simulatedResponse;
+        //  const simulatedResponse = `Фінансовий аналіз для активу: Прогноз: Зростання на 10% у наступні 6 місяців.`;
+
+        //  return simulatedResponse;
     } catch (error) {
-        console.error('Помилка при аналізі чанка:', error);
+        logger.error('Error analyzing chunk:', error);
         return ''; 
     }
 };
 
 const analyzeAsset = async (newsUrls, asset, userId,) => {
     try {
+        logger.info(`Starting analysis for asset: ${asset} by user: ${userId}`);
 
         const analysis = new AnalysisModel({
             userId,
@@ -75,7 +80,8 @@ const analyzeAsset = async (newsUrls, asset, userId,) => {
             analyzedAt: new Date(),
             status: "Статті знайдено, відбувається парсинг сторінок"
         });
-
+        await analysis.save();
+        
         const allArticleTexts = []; 
 
         for (const url of newsUrls) {
@@ -84,7 +90,7 @@ const analyzeAsset = async (newsUrls, asset, userId,) => {
                 allArticleTexts.push(articleText); 
             }
         }
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        //await new Promise((resolve) => setTimeout(resolve, 5000));
 
         analysis.status = "Текст статей отримано, відбувається аналіз";
 
@@ -92,14 +98,20 @@ const analyzeAsset = async (newsUrls, asset, userId,) => {
         const combinedText = allArticleTexts.join('\n\n'); 
 
         const chunks = chunkText(combinedText, 5000); 
+        logger.info(`Analyzing ${chunks.length} chunks...`);
 
         const results = await Promise.all(chunks.map(analyzeChunk)); 
         
         analysis.result = results.join('\n\n'); 
         analysis.status = "completed"; 
         analysis.analyzedAt = new Date()
+        
         await analysis.save();
+        logger.info(`Analysis completed successfully for asset: ${asset}`);
+
     } catch (error) {
+        logger.error('Error analyzing asset:', error);
+
         console.error('Помилка при аналізі активу:', error);
         throw new Error('Помилка аналізу активу');
     }
@@ -131,7 +143,8 @@ const getNewsUrls = async (asset, newsCount) => {
         const newsUrls = await NewsModel.find({ asset }).limit(newsCount).select('url').lean();
         return newsUrls;
     } catch (error) {
-        console.error('Помилка під час отримання новин з бази даних:', error);
+        
+        logger.error('Error fetching news from database:', error);
         throw new Error('Помилка отримання новин');
     }
 };
